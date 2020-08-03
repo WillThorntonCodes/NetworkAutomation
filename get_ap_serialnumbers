@@ -1,0 +1,19 @@
+# Get serial numbers of APs from WLC
+
+from netmiko import ConnectHandler
+import re
+
+my_wlc = {
+    'device_type': 'cisco_wlc_ssh',
+    'host': '1.1.1.1', 
+    'username': 'UserName',
+    'password': 'Password',       
+}
+
+conn = ConnectHandler(**my_wlc)
+conn.send_command('')
+answer = conn.send_command('show ap inventory all')
+
+result = re.findall('PID: (.*)',answer)
+for device in result:
+    print (device)

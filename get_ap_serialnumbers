@@ -7,13 +7,13 @@ my_wlc = {
     'device_type': 'cisco_wlc_ssh',
     'host': '1.1.1.1', 
     'username': 'UserName',
-    'password': 'Password',       
+    'password': 'PassW0rd!',       
 }
 
 conn = ConnectHandler(**my_wlc)
-conn.send_command('')
 answer = conn.send_command('show ap inventory all')
 
 result = re.findall('PID: (.*)',answer)
 for device in result:
-    print (device)
+    x = str(device).replace('  VID: V01,  ','')
+    print (x)

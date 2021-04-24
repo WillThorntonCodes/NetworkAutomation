@@ -1,9 +1,9 @@
 /*
 *Author			Willie Thornton
 *Program		change-domain-name.slax
-*Modification	2021/04/23
+*Modification		2021/04/23
 *Platform		Corporate Network
-*Description	Change hostname of device
+*Description		Change hostname of device
 */
 
 version 1.0;

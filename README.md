@@ -1,2 +1,2 @@
 # NetworkAutomation
-Python programs for networking
+Network automation scripts using Python, Juniper OS/SLAX, and more.

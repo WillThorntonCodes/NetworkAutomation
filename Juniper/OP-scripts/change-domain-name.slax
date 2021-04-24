@@ -1,0 +1,49 @@
+/*
+*Author			Willie Thornton
+*Program		change-domain-name.slax
+*Modification	2021/04/23
+*Platform		Corporate Network
+*Description	Change hostname of device
+*/
+
+version 1.0;
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+
+import "../import/junos.xsl";
+
+match / {
+	<op-script-results> {
+		expr jcs:output('Starting script');
+		var $confirmed-timeout = "3";
+		var $sleeptime = "30";
+		var $test-host = "172.16.2.12";
+		var $source-ifl = "lo0.0";
+		var $encoding = "ascii";
+		
+		var $connection = jcs:open();
+
+		/* Get device model */
+		var $model_is = jcs.regex("(srx)([0-9]+)", jcs:invoke('get-software-information')/product-model)[3];
+		var $model_msg = "Model: -> [" _$model_is_ "]";
+		expr jcs:output($model_msg)
+		expr jcs:output('Constructing change');
+		var $load-rpc1 = {
+			<load-configuration action="set" format="text"> {
+				<configuration-set> {
+					expr "set system domain-name new-domain \n";
+				}
+			}
+		}
+		expr jcs:output('Installing change statements');
+		var $load-result1 = jcs:execute( $connection, $load-rpc1 );
+
+		var $commit-configuration = <commit-configuration> {
+			<confirmed>;
+			<confirmed-timeout> $confirmed-timeout;
+			}
+	    	expr jcs:close( $connection );
+        }
+}
+

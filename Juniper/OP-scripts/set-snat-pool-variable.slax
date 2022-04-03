@@ -1,0 +1,58 @@
+/*
+*Author			Willie Thornton
+*Program		set-snat-pool-variable.slax
+*Modification		2022/03/31
+*Platform		Corporate Network
+*Description		Source NAT with a variable for pool address. The variable changes the pool address accourding to the loopback a
+ddresses first 3 octets and sets a common last octet of '100'. Needed for a specific use case where an internal only network
+needed one specific IP to communitcate to the internet. Each router has a different IP scheme (internal scheme is same 
+across all routers) so variable is needed.
+Example: if the lookback is '192.168.1.15' the script will add the SNAT with pool address of '192.168.1.100/32'. 
+If another router has lookback of '192.168.5.4' the pool address will be '192.168.5.100/32'. 
+*/
+
+version 1.0;
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+
+import "../import/junos.xsl";
+
+match / {
+	<op-script-results> {
+		expr jcs:output('Starting script');
+		
+		var $connection = jcs:open();
+
+		/* Get device model */
+                var $interfaces = <command> "show configuration interfaces fxp0 unit 0 family inet";
+                var $loopback = jcs:invoke($interfaces);
+                var $cidr = substring-after($loopback, "address ");
+                var $ip = substring-before($cidr, "/24");
+                /* perfroms the magic! */
+                var $pool-ip = concat(substring-before($ip, "3"),"100/32 \n");
+                /* show output in Juniper Space to confirm syntax */
+                expr jcs:output(concat("set security nat source pool SNAT-POOL address ", $pool-ip));
+                var $pool-cmd = concat("set security nat source pool SNAT-POOL address ", $pool-ip);
+		expr jcs:output("SRX");
+		expr jcs:output('Constructing change');
+		var $load-rpc1 = {
+			<load-configuration action="set" format="text"> {
+				<configuration-set> {
+					expr "set security nat source \n";
+					expr $pool-cmd;
+					expr "set security nat source rule-set ruleset1 from zone trust \n";
+					expr "set security nat source rule-set ruleset1 to zone untrust \n";
+					expr "set security nat source rule-set ruleset1 rule rule1 match source-address 172.22.5.75/32 \n";
+					expr "set security nat source rule-set ruleset1 rule rule1 then source-nat pool SNAT-POOL \n";
+
+				}
+			}
+		}
+		expr jcs:output('Installing change statements');
+		var $load-result1 = jcs:execute( $connection, $load-rpc1 );
+                var $commit-configuration = <commit-configuration>;
+                var $commit-results = jcs:execute($connection, $commit-configuration);
+	    	expr jcs:close( $connection );
+        }
+}
